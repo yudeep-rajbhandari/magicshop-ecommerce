@@ -2,14 +2,23 @@
 
 import useSWR from 'swr';
 import { useState } from 'react';
+import { ChangeEvent } from 'react';
+import Image from 'next/image';
+
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-
+type Product = {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    imageUrl: string;
+};
 export default function ProductsPage() {
     const { data, error, mutate, isLoading } = useSWR('/api/products', fetcher);
     const [form, setForm] = useState({ name: '', description: '', price: '', imageUrl: '' });
 
-    const handleChange = (e: any) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -53,10 +62,15 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.map((product: any) => (
+                {data.map((product: Product) => (
                     <div key={product.id} className="border rounded-xl p-4 shadow relative">
-                        <img src={product.imageUrl} alt={product.name} className="w-full h-40 object-cover rounded-md" />
-                        <h2 className="text-xl font-semibold mt-2">{product.name}</h2>
+                        <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={400}
+                            height={160}
+                            className="w-full h-40 object-cover rounded-md"
+                        />                        <h2 className="text-xl font-semibold mt-2">{product.name}</h2>
                         <p className="text-gray-600">{product.description}</p>
                         <p className="text-lg font-bold mt-2">${product.price.toFixed(2)}</p>
                         <button onClick={() => handleDelete(product.id)} className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-sm rounded">Delete</button>

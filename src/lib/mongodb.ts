@@ -5,10 +5,11 @@ const MONGODB_URI = process.env.MONGODB_URI || ''
 if (!MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable')
 }
-
+// eslint-disable-next-line
 let cached = (global as any).mongoose
 
 if (!cached) {
+    // eslint-disable-next-line
     cached = (global as any).mongoose = { conn: null, promise: null }
 }
 

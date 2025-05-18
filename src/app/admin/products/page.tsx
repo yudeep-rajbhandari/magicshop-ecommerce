@@ -1,134 +1,62 @@
-'use client';
+"use client";
 
-import useSWR from 'swr';
-import { useState } from 'react';
-import { ChangeEvent } from 'react';
-import Image from 'next/image';
-
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { useActionState } from "react";
+import { saveProduct } from "./action";
 
 type Product = {
-    id: number;
-    name: string;
-    description: string;
-    price: number;
-    imageUrl: string;
+  name: string;
+  description: string;
+  price: number;
+  image: File | null;
+};
+
+const initialState = {
+  success: false,
+  message: "",
+  inputs: {} as any,
 };
 
 export default function ProductsPage() {
-    const { data, error, mutate, isLoading } = useSWR('/api/products', fetcher);
-    const [form, setForm] = useState({ name: '', description: '', price: '', imageUrl: '' });
-    const [imageFile, setImageFile] = useState<File | null>(null);
+  const [state, formAction, pending] = useActionState(
+    saveProduct,
+    initialState
+  );
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Product List</h1>
 
-    // eslint-disable-next-line
-    const [imageError, setImageError] = useState<boolean>(false);
-
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) {
-            setImageFile(e.target.files[0]);
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!imageFile) {
-            alert("Please select an image.");
-            return;
-        }
-
-        // Upload image to S3
-        const formData = new FormData();
-        formData.append('file', imageFile);
-
-        const uploadRes = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!uploadRes.ok) {
-            alert('Image upload failed');
-            return;
-        }
-
-        const { imageUrl } = await uploadRes.json();
-        await fetch('/api/products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: form.name,
-                description: form.description,
-                price: parseFloat(form.price),
-                imageUrl: imageUrl,
-            }),
-        });
-
-        setForm({ name: '', description: '', price: '', imageUrl: '' });
-        mutate();
-    };
-
-    const handleDelete = async (id: number) => {
-        await fetch('/api/products', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id }),
-        });
-        mutate();
-    };
-
-    const handleImageError = () => {
-        setImageError(true);
-    };
-
-    const isValidUrl = (url: string) => {
-        try {
-            new URL(url);
-            return true;
-            // eslint-disable-next-line
-        } catch (e) {
-            return false;
-        }
-    };
-
-    if (isLoading) return <p>Loading...</p>;
-    if (error) return <p>Error loading products</p>;
-
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Product List</h1>
-
-            <div className="mb-6 space-y-2">
-                <input name="name" placeholder="Name" onChange={handleChange} value={form.name} className="border p-2 w-full" />
-                <input name="description" placeholder="Description" onChange={handleChange} value={form.description} className="border p-2 w-full" />
-                <input name="price" placeholder="Price" onChange={handleChange} value={form.price} className="border p-2 w-full" />
-                <input type="file" accept="image/*" onChange={handleImageChange} className="border p-2 w-full" />
-
-                <button onClick={handleSubmit} className="bg-blue-500 text-white px-4 py-2 rounded">Add Product</button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.map((product: Product) => (
-                    <div key={product.id} className="border rounded-xl p-4 shadow relative">
-                        <div className="w-full h-40">
-                            <Image
-                                src={isValidUrl(product.imageUrl) ? product.imageUrl : '/vercel.svg'} // Validate the URL before rendering
-                                alt={product.name}
-                                width={400}
-                                height={160}
-                                className="w-full h-full object-cover rounded-md"
-                                onError={handleImageError} // Trigger error handler when image fails to load
-                            />
-                        </div>
-                        <h2 className="text-xl font-semibold mt-2">{product.name}</h2>
-                        <p className="text-gray-600">{product.description}</p>
-                        <p className="text-lg font-bold mt-2">${product.price.toFixed(2)}</p>
-                        <button onClick={() => handleDelete(product.id)} className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-sm rounded">Delete</button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+      <div className="mb-6 space-y-2">
+        <form className="flex flex-col space-y-2" action={formAction}>
+          <input
+            name="name"
+            placeholder="Name"
+            className="border p-2 w-full"
+            defaultValue={state?.inputs?.name}
+          />
+          <input
+            name="description"
+            placeholder="Description"
+            className="border p-2 w-full"
+            defaultValue={state?.inputs?.description}
+          />
+          <input
+            name="price"
+            placeholder="Price"
+            className="border p-2 w-full"
+            type='number'
+            defaultValue={state?.inputs?.price} 
+          />
+          <input
+            name="imageUrl"
+            placeholder="Image URL"
+            className="border p-2 w-full"
+            type="file"
+          />
+          <button className="bg-blue-500 text-white px-4 py-2 rounded" disabled={pending}>
+            Add Product
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }

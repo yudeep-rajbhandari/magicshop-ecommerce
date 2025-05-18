@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createClient } from '@supabase/supabase-js'
+
+
+const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET() {
-    const products = await prisma.product.findMany();
-    return NextResponse.json(products);
+    const products = await prisma.product.findMany()
+
+    const signedProducts = await Promise.all(
+        products.map(async (product) => {
+            const { data } = await supabase.storage
+                .from(process.env.SUPABASE_BUCKET_NAME!) //your Supabase bucket name
+                .createSignedUrl(product.imageUrl, 60 * 60) // 1 hour expiry
+
+            return {
+                ...product,
+                imageUrl: data?.signedUrl ?? null,
+            }
+        })
+    )
+    console.log(signedProducts)
+    return NextResponse.json(signedProducts)
 }
 
 export async function POST(req: Request) {

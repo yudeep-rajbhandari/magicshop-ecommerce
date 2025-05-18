@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ChangeEvent } from 'react';
 import Image from 'next/image';
 
+
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 type Product = {
@@ -18,6 +19,8 @@ type Product = {
 export default function ProductsPage() {
     const { data, error, mutate, isLoading } = useSWR('/api/products', fetcher);
     const [form, setForm] = useState({ name: '', description: '', price: '', imageUrl: '' });
+    const [imageFile, setImageFile] = useState<File | null>(null);
+
     // eslint-disable-next-line
     const [imageError, setImageError] = useState<boolean>(false);
 
@@ -25,7 +28,33 @@ export default function ProductsPage() {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            setImageFile(e.target.files[0]);
+        }
+    };
+
     const handleSubmit = async () => {
+        if (!imageFile) {
+            alert("Please select an image.");
+            return;
+        }
+
+        // Upload image to S3
+        const formData = new FormData();
+        formData.append('file', imageFile);
+
+        const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!uploadRes.ok) {
+            alert('Image upload failed');
+            return;
+        }
+
+        const { imageUrl } = await uploadRes.json();
         await fetch('/api/products', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -33,9 +62,10 @@ export default function ProductsPage() {
                 name: form.name,
                 description: form.description,
                 price: parseFloat(form.price),
-                imageUrl: form.imageUrl,
+                imageUrl: imageUrl,
             }),
         });
+
         setForm({ name: '', description: '', price: '', imageUrl: '' });
         mutate();
     };
@@ -74,7 +104,8 @@ export default function ProductsPage() {
                 <input name="name" placeholder="Name" onChange={handleChange} value={form.name} className="border p-2 w-full" />
                 <input name="description" placeholder="Description" onChange={handleChange} value={form.description} className="border p-2 w-full" />
                 <input name="price" placeholder="Price" onChange={handleChange} value={form.price} className="border p-2 w-full" />
-                <input name="imageUrl" placeholder="Image URL" onChange={handleChange} value={form.imageUrl} className="border p-2 w-full" />
+                <input type="file" accept="image/*" onChange={handleImageChange} className="border p-2 w-full" />
+
                 <button onClick={handleSubmit} className="bg-blue-500 text-white px-4 py-2 rounded">Add Product</button>
             </div>
 

@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String
   price       Float
@@ -19,8 +19,8 @@ model Product {
 }
 
 model Order {
-  id        Int      @id @default(autoincrement())
-  productId Int
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String
   quantity  Int
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id])

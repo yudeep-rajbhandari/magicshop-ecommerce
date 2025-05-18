@@ -23,7 +23,6 @@ export async function GET() {
             }
         })
     )
-    console.log(signedProducts)
     return NextResponse.json(signedProducts)
 }
 

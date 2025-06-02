@@ -3,12 +3,12 @@
 import { useActionState } from "react";
 import { saveProduct } from "./action";
 
-type Product = {
-  name: string;
-  description: string;
-  price: number;
-  image: File | null;
-};
+// type Product = {
+//   name: string;
+//   description: string;
+//   price: number;
+//   image: File | null;
+// };
 
 const initialState = {
   success: false,

@@ -25,7 +25,7 @@ const Navbar = () => {
             signOut()
         }
         else {
-            redirect('/login')
+            signIn()
         }
     };
 

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import theme from "./theme";
 import "./globals.css";
-import { SessionProvider } from 'next-auth/react';
-
+import { SessionProvider } from "next-auth/react";
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,20 +27,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-      <ThemeProvider theme={theme}>
-          <SessionProvider>
-          <CssBaseline />
-
-      <html lang="en">
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      ><AppRouterCacheProvider>
+        <ThemeProvider theme={theme}>
+          <SessionProvider>
+            <CssBaseline />
+            {children}
+          </SessionProvider>
+        </ThemeProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
-          </SessionProvider>
-
-      </ThemeProvider>
-
   );
 }

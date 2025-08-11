@@ -6,6 +6,7 @@ import theme from "./theme";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
+import Navbar from "@/app/admin/navbar";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -32,7 +33,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       ><AppRouterCacheProvider>
         <ThemeProvider theme={theme}>
-          <SessionProvider>
+          <SessionProvider >
+            <Navbar/>
             <CssBaseline />
             {children}
           </SessionProvider>

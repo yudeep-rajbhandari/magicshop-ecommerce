@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { uploadImage } from "@/lib/upload";
 
 export const saveProduct = async (_prevState: any, formData: FormData) => {
-  const file = formData.get("file") as File;
+  const file = formData.get("imageUrl") as File;
   let imageUrl = "";
   if (file){
     imageUrl= await uploadImage(file, process.env.SUPABASE_BUCKET_NAME!);

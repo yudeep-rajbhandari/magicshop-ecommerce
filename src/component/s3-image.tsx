@@ -14,7 +14,9 @@ const fetcher = async (url: string) => {
   return data.url as string;
 };
 
+
 export default function SignedImage({ fileKey, alt = '' }: SignedImageProps) {
+
   const { data: imageUrl, error, isLoading } = useSWR(
     `/api/presigned-url?key=${encodeURIComponent(fileKey)}`,
     fetcher,
@@ -30,7 +32,8 @@ export default function SignedImage({ fileKey, alt = '' }: SignedImageProps) {
     <img
       src={imageUrl}
       alt={alt}
-      className="rounded-lg shadow-md max-w-full"
+      className="rounded-lg shadow-md max-w-full max-h-64 object-contain"
+
     />
   );
 }

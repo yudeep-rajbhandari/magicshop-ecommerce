@@ -5,6 +5,8 @@ import useSWR from 'swr';
 interface SignedImageProps {
   fileKey: string;
   alt?: string;
+  // 'product' uses the standard bucket, 'order' uses the private screenshots bucket
+  type?: 'product' | 'order';
 }
 
 const fetcher = async (url: string) => {
@@ -14,26 +16,26 @@ const fetcher = async (url: string) => {
   return data.url as string;
 };
 
-
-export default function SignedImage({ fileKey, alt = '' }: SignedImageProps) {
-
+export default function SignedImage({ fileKey, alt = '', type = 'product' }: SignedImageProps) {
+  // We include the 'type' in the API call so the backend knows which bucket to use
   const { data: imageUrl, error, isLoading } = useSWR(
-    `/api/presigned-url?key=${encodeURIComponent(fileKey)}`,
-    fetcher,
-    {
-      refreshInterval: 55000, // Optional: revalidate every 55s if the signed URL expires in 60s
-    }
+      fileKey ? `/api/presigned-url?key=${encodeURIComponent(fileKey)}&type=${type}` : null,
+      fetcher,
+      {
+        refreshInterval: 55 * 60 * 1000, // Revalidate every 55 minutes (assuming 1hr expiry)
+        revalidateOnFocus: false,      // Prevent unnecessary fetches when switching tabs
+      }
   );
 
-  if (isLoading) return <p>Loading image…</p>;
-  if (error) return <p>Failed to load image</p>;
+  if (!fileKey) return <div className="p-2 text-gray-400">No image provided</div>;
+  if (isLoading) return <p className="animate-pulse">Loading image…</p>;
+  if (error) return <p className="text-red-500 text-sm">Failed to load image</p>;
 
   return (
-    <img
-      src={imageUrl}
-      alt={alt}
-      className="rounded-lg shadow-md max-w-full max-h-64 object-contain"
-
-    />
+      <img
+          src={imageUrl}
+          alt={alt}
+          className="rounded-lg shadow-md max-w-full max-h-64 object-contain"
+      />
   );
 }

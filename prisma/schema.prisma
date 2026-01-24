@@ -7,23 +7,77 @@ datasource db {
   url      = env("MONGODB_URI")
 }
 
+enum OrderStatus {
+  PENDING
+  SUBMITTED
+  PAID
+  SENT_TO_THIRD_PARTY
+  RECEIVED_FROM_THIRD_PARTY
+  PREPARING_DELIVERY
+  DELIVERED
+  REJECTED
+}
+
 model Product {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String
   price       Float
   imageUrl    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  orders      Order[]
+
+  // NEW: Category relation
+  categoryId String?   @db.ObjectId
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  orderItems OrderItem[]
 }
 
+model Category {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  name     String    @unique
+  products Product[]
+
+  // Embedded Promo Logic
+  hasPromo     Boolean @default(false)
+  minQuantity  Int? // e.g., 2
+  discountRate Float? // e.g., 0.10 for 10%
+}
+
+// model PromoRule {
+//   id           String     @id @default(auto()) @map("_id") @db.ObjectId
+//   name         String // e.g., "Bulk Apparel Discount"
+//   minQuantity  Int // e.g., 2
+//   discountRate Float // e.g., 0.10 for 10%
+//   categories   Category[] // One rule can apply to multiple categories
+// }
+
+// 1. This is the "Container" for the shareable link
 model Order {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id])
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  clientName        String? // New
+  clientAge         Int? // New
+  clientAddress     String? // New
+  clientEmail       String?
+  paymentScreenshot String?
+  totalAmount       Float
+  remainingAmount   Float?
+  status            OrderStatus @default(PENDING)
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+}
+
+// 2. This links products to a specific order with a quantity
+model OrderItem {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String  @db.ObjectId
+  productId       String  @db.ObjectId
+  quantity        Int     @default(1)
+  priceAtPurchase Float // Capture price in case product price changes later
+  discountApplied Float   @default(0.0) // New field
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id])
 }
 
 model User {

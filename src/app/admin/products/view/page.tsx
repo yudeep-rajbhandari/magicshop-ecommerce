@@ -1,190 +1,219 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import Sidebar from "@/app/admin/portal/sidebar";
 import {
-    Box,
-    TextField,
-    Select,
-    MenuItem,
-    InputLabel,
-    FormControl,
-    Card,
-    CardContent,
-    CardMedia,
-    Typography,
-    Grid,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    CircularProgress, CardActions, Button,
+    Box, TextField, Select, MenuItem, InputLabel, FormControl,
+    Card, CardContent, Typography, Grid, Dialog, DialogTitle,
+    DialogContent, DialogActions, CircularProgress, CardActions, Button,
+    Chip
 } from "@mui/material";
-import {deleteProduct, viewProducts} from "./action"; // import server action
+import { deleteProduct, viewProducts, createOrderAction } from "./action";
 import SignedImage from '../../../../component/s3-image';
-const drawerWidth = 240;
 
+const drawerWidth = 240;
+const cartWidth = 300;
+
+// Updated Type to handle relational data from Prisma
 type Product = {
-    id: number;
+    id: string;
     name: string;
-    category?: string;
     price: number;
     imageUrl: string;
+    category?: {
+        name: string;
+    } | null;
 };
 
 export default function ProductsViewPage() {
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
+    const [cart, setCart] = useState<Product[]>([]);
     const [isPending, startTransition] = useTransition();
-    const [error, setError] = useState<string | null>(null);
-    const [search, setSearch] = useState("");
-    const [category, setCategory] = useState("");
-    const [selectedProductId, setSelectedProductId] = useState(null);
-    const [open, setOpen] = useState(false);
 
+    // UI States
+    const [search, setSearch] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState(""); // Renamed for clarity
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [linkData, setLinkData] = useState<{open: boolean, url: string}>({open: false, url: ""});
 
     const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
     const fetchProducts = () => {
         startTransition(async () => {
-            try {
-                const data = await viewProducts(); // Call the server action here
-                setProducts(data);
-                setError(null);
-            } catch (err) {
-                setError("Failed to load products");
-            }
+            const data = await viewProducts();
+            setProducts(data as Product[]);
         });
     };
 
-    const handleDelete = (id: number) => {
-        startTransition(async ()=> {
-            try {
-                await deleteProduct(id);
+    useEffect(() => { fetchProducts(); }, []);
 
-            } catch (err) {
-                setError("Failed to delete product");
-            }
-            fetchProducts();
-        })
-    }
-
-    React.useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    // Filter products client-side
-    const filteredProducts = products.filter((product) => {
-        const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = category ? product.category === category : true;
-        return matchesSearch && matchesCategory;
-    });
-
-    const handleOpenDialog = (id) => {
-        setSelectedProductId(id);
-        setOpen(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpen(false);
-        setSelectedProductId(null);
-    };
-
-    const confirmDelete = () => {
-        if (selectedProductId) {
-            handleDelete(selectedProductId);
+    // Cart Logic
+    const addToCart = (product: Product) => setCart([...cart, product]);
+    const removeFromCart = (id: string) => {
+        const index = cart.findIndex(item => item.id === id);
+        if (index > -1) {
+            const newCart = [...cart];
+            newCart.splice(index, 1);
+            setCart(newCart);
         }
-        handleCloseDialog();
     };
+
+    const handleGenerateLink = async () => {
+        const result = await createOrderAction(cart);
+        if (result.success) {
+            const url = `${window.location.origin}/checkout/${result.orderId}`;
+            setLinkData({ open: true, url });
+            setCart([]); // Clear cart after success
+        } else {
+            alert("Error creating order");
+        }
+    };
+
+    // Extract unique categories from loaded products for the dropdown
+    const uniqueCategories = Array.from(
+        new Set(products.map((p) => p.category?.name).filter(Boolean))
+    );
+
+    const filteredProducts = products.filter((p) =>
+        p.name.toLowerCase().includes(search.toLowerCase()) &&
+        (categoryFilter ? p.category?.name === categoryFilter : true)
+    );
 
     return (
-        <><Box sx={{display: "flex"}}>
-            <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle}/>
+        <Box sx={{ display: "flex", bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+            <Sidebar
+                mobileOpen={mobileOpen}
+                handleDrawerToggle={handleDrawerToggle}
+                cart={cart}
+                onRemoveFromCart={removeFromCart}
+                onCreateOrder={handleGenerateLink}
+            />
 
-            <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    p: 3,
-                    width: {sm: `calc(100% - ${drawerWidth}px)`},
-                    ml: {sm: `${drawerWidth}px`},
-                    mt: 8,
-                }}
-            >
-                <Box sx={{display: "flex", gap: 2, mb: 4}}>
+            <Box component="main" sx={{
+                flexGrow: 1,
+                p: 3,
+                mt: 8,
+                ml: { sm: `${drawerWidth}px` },
+                mr: { md: `${cartWidth}px` },
+                width: { sm: `calc(100% - ${drawerWidth}px - ${cartWidth}px)` }
+            }}>
+                <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>Product Catalog</Typography>
+
+                {/* Search & Filter Bar */}
+                <Box sx={{ display: "flex", gap: 2, mb: 4, bgcolor: "white", p: 2, borderRadius: 2, boxShadow: 1 }}>
                     <TextField
-                        label="Search Products"
+                        fullWidth
+                        label="Search by name..."
                         variant="outlined"
+                        size="small"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        sx={{flex: 1}}/>
-                    <FormControl sx={{minWidth: 150}}>
+                    />
+                    <FormControl sx={{ minWidth: 200 }} size="small">
                         <InputLabel>Category</InputLabel>
                         <Select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
                             label="Category"
                         >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="Electronics">Electronics</MenuItem>
-                            <MenuItem value="Clothing">Clothing</MenuItem>
-                            <MenuItem value="Footwear">Footwear</MenuItem>
+                            <MenuItem value="">All Categories</MenuItem>
+                            {uniqueCategories.map((name) => (
+                                <MenuItem key={name} value={name}>{name}</MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>
 
                 {isPending ? (
-                    <CircularProgress/>
-                ) : error ? (
-                    <Typography color="error">{error}</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress /></Box>
                 ) : (
                     <Grid container spacing={3}>
-                        {filteredProducts.length > 0 ? (
-                            filteredProducts.map((product) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                                    <Card>
-                                        <SignedImage fileKey={product.imageUrl}/>
-                                        <CardContent>
-                                            <Typography variant="h6">{product.name}</Typography>
-                                            {product.category && (
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {product.category}
-                                                </Typography>
-                                            )}
-                                            <Typography variant="subtitle1">${product.price}</Typography>
-                                        </CardContent>
-                                        <CardActions>
-                                            <Button
-                                                size="small"
-                                                color="error"
-                                                onClick={() => handleOpenDialog(product.id)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </CardActions>
-                                    </Card>
-                                </Grid>
-                            ))
-                        ) : (
-                            <Typography>No products found.</Typography>
-                        )}
-                    </Grid>
+                        {filteredProducts.map((product) => (
+                            <Grid item xs={12} sm={6} lg={4} key={product.id}>
+                                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden', transition: '0.3s', '&:hover': { boxShadow: 6 } }}>
+                                    <SignedImage fileKey={product.imageUrl} />
+                                    <CardContent sx={{ flexGrow: 1 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                                                {product.name}
+                                            </Typography>
+                                            <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 'bold' }}>
+                                                ${product.price.toFixed(2)}
+                                            </Typography>
+                                        </Box>
 
+                                        {/* Category Badge */}
+                                        <Chip
+                                            label={product.category?.name || "N/A"}
+                                            size="small"
+                                            color={product.category ? "primary" : "default"}
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.75rem' }}
+                                        />
+                                    </CardContent>
+                                    <CardActions sx={{ p: 2, pt: 0, gap: 1 }}>
+                                        <Button
+                                            fullWidth
+                                            variant="contained"
+                                            onClick={() => addToCart(product)}
+                                            sx={{ borderRadius: 2 }}
+                                        >
+                                            Add to Order
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            color="error"
+                                            onClick={() => setDeleteId(product.id)}
+                                            sx={{ borderRadius: 2 }}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </CardActions>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
                 )}
             </Box>
-        </Box><Dialog open={open} onClose={handleCloseDialog}>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogContent>
-                <Typography>Are you sure you want to delete this product?</Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleCloseDialog} color="primary">
-                    Cancel
-                </Button>
-                <Button onClick={confirmDelete} color="error">
-                    Delete
-                </Button>
-            </DialogActions>
-        </Dialog></>
+
+            {/* Success Link Modal */}
+            <Dialog open={linkData.open} onClose={() => setLinkData({open: false, url: ""})} fullWidth maxWidth="sm">
+                <DialogTitle sx={{ fontWeight: 'bold' }}>Order Link Ready</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Share this unique checkout link with your customer:
+                    </Typography>
+                    <Box sx={{ p: 2, bgcolor: '#f0f7ff', border: '1px dashed #1976d2', borderRadius: 2, wordBreak: 'break-all', mt: 2 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{linkData.url}</Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 3 }}>
+                    <Button variant="contained" onClick={() => {
+                        navigator.clipboard.writeText(linkData.url);
+                        alert("Copied to clipboard!");
+                    }}>Copy to Clipboard</Button>
+                    <Button onClick={() => setLinkData({open: false, url: ""})}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation */}
+            <Dialog open={Boolean(deleteId)} onClose={() => setDeleteId(null)}>
+                <DialogTitle>Permanent Delete?</DialogTitle>
+                <DialogContent>
+                    <Typography>This action cannot be undone. Are you sure you want to delete this product?</Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setDeleteId(null)}>Cancel</Button>
+                    <Button color="error" variant="contained" onClick={async () => {
+                        if (deleteId) {
+                            await deleteProduct(deleteId); // Passed as string
+                            setDeleteId(null);
+                            fetchProducts();
+                        }
+                    }}>Confirm Delete</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
     );
 }

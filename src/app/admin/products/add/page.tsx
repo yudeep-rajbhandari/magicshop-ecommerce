@@ -1,148 +1,43 @@
-"use client";
-
-import React, { useActionState, useState, useRef, useEffect } from "react";
-import { saveProduct } from "./action";
+import { prisma } from "@/lib/prisma";
 import Sidebar from "@/app/admin/portal/sidebar";
-import {
-    Box,
-    Card,
-    CardContent,
-    Typography,
-    TextField,
-    Button,
-    Divider,
-    Snackbar,
-    Alert,
-} from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
+import AddProductForm from "./AddProductForm";
 
-const initialState = {
-    success: false,
-    message: "",
-    inputs: {} as any,
-};
+const drawerWidth = 240;
 
-export default function ProductsPage() {
-    const [state, formAction, pending] = useActionState(saveProduct, initialState);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarSeverity, setSnackbarSeverity] =
-        useState<"success" | "error">("success");
-    const [snackbarMessage, setSnackbarMessage] = useState("");    const formRef = useRef<HTMLFormElement>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-    const drawerWidth = 240;
-    const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-
-    // Reset form & show snackbar on success
-    useEffect(() => {
-        if (state.success) {
-            if (formRef.current) formRef.current.reset();
-            setSelectedFile(null);
-            setSnackbarSeverity("success");
-            setSnackbarMessage(state.message || "Product added successfully!");
-            setSnackbarOpen(true);
-        } else if (state.message) {
-            setSnackbarSeverity("error");
-            setSnackbarMessage(state.message || "Failed to add product.");
-            setSnackbarOpen(true);
-        }
-    }, [state]);
+export default async function AddProductPage() {
+    // Fetch categories to populate the dropdown
+    const categories = await prisma.category.findMany({
+        orderBy: { name: 'asc' }
+    });
 
     return (
-        <Box sx={{ display: "flex" }}>
-            {/* Sidebar */}
-            <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
+        <Box sx={{ display: "flex", bgcolor: "#f9f9f9", minHeight: "100vh" }}>
+            <Sidebar mobileOpen={false} />
 
-            {/* Main Content */}
             <Box
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    width: { sm: `calc(100% - ${drawerWidth}px)` },
-                    ml: { sm: `${drawerWidth}px` },
-                    height: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     p: 3,
+                    mt: 8,
+                    ml: { sm: `${drawerWidth}px` },
+                    width: { sm: `calc(100% - ${drawerWidth}px)` },
                 }}
             >
-                <Card sx={{ maxWidth: 500, width: "100%" }}>
-                    <CardContent>
-                        <Typography variant="h5" gutterBottom textAlign="center">
-                            Add Product
-                        </Typography>
-                        <Divider sx={{ mb: 3 }} />
+                <Box sx={{ maxWidth: 800, mx: "auto" }}>
+                    <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
+                        Add New Product
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mb: 4 }}>
+                        Create a new listing and assign it to a category for automatic promos.
+                    </Typography>
 
-                        <form
-                            ref={formRef}
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1rem",
-                            }}
-                            action={formAction}
-                        >
-                            <TextField name="name" label="Name" variant="outlined" fullWidth />
-                            <TextField
-                                name="description"
-                                label="Description"
-                                variant="outlined"
-                                multiline
-                                rows={3}
-                                fullWidth
-                            />
-                            <TextField
-                                name="price"
-                                label="Price"
-                                type="number"
-                                variant="outlined"
-                                fullWidth
-                            />
-                            <Button
-                                variant="outlined"
-                                component="label"
-                                sx={{ justifyContent: "space-between" }}
-                            >
-                                {selectedFile ? selectedFile.name : "Upload Image"}
-                                <input
-                                    name="imageUrl"
-                                    type="file"
-                                    hidden
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0] || null;
-                                        setSelectedFile(file);
-                                    }}
-                                />
-                            </Button>
-
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                disabled={pending}
-                            >
-                                {pending ? "Saving..." : "Add Product"}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {/* Snackbar for success */}
-                <Snackbar
-                    open={snackbarOpen}
-                    autoHideDuration={3000}
-                    onClose={() => setSnackbarOpen(false)}
-                    anchorOrigin={{ vertical: "top", horizontal: "center" }}
-                >
-                    <Alert
-                        onClose={() => setSnackbarOpen(false)}
-                        severity="success"
-                        sx={{ width: "100%" }}
-                    >
-                        Product added successfully!
-                    </Alert>
-                </Snackbar>
+                    <Paper sx={{ p: 4, borderRadius: 3, boxShadow: "0px 4px 20px rgba(0,0,0,0.05)" }}>
+                        {/* Pass categories to the Client Component form */}
+                        <AddProductForm categories={categories} />
+                    </Paper>
+                </Box>
             </Box>
         </Box>
     );

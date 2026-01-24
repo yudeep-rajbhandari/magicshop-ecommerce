@@ -1,16 +1,29 @@
 'use client';
 
-import { AppBar, Toolbar, IconButton, Typography, Button, Box, Drawer, List, ListItem, ListItemText } from '@mui/material';
+import {AppBar, Toolbar, IconButton, Typography, Button, Box, Skeleton} from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import LoginLogoutButton from "@/app/admin/SignInButton";
 
 const Navbar = () => {
-    const { data: session } = useSession();
+    const { data: session,status } = useSession();
     const [mobileOpen, setMobileOpen] = useState(false);
 
-    const isLoggedIn = !!session?.user;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isLoggedIn = status === "authenticated";
+    const isLoading = status === "loading";
+
+    // ... rest of your code
+
+    // Important: Prevent the nav links from flashing incorrectly
+    if (!mounted) return null;
     const navItems = ['Home', 'About','Portal'];
 
     const handleDrawerToggle = () => {
@@ -21,10 +34,10 @@ const Navbar = () => {
         console.log('session', session);
 
         if(isLoggedIn){
-            await signOut({ redirect: false });
+            await signOut({ redirect: true });
         }
         else {
-            await signIn(undefined, { redirect: false });
+            await signIn(undefined, { redirect: true });
 
         }
     };
@@ -55,23 +68,17 @@ const Navbar = () => {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}>MagicShop</Typography>
-                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {navItems.filter(j=> isLoggedIn || j !== 'Admin'
-                        ).map((item) => (
-                            <Link
-                                key={item}
-                                href={item === 'Home' ? '/' : `/admin/${item.toLowerCase()}`}
-                                passHref
-                            >
-                                <Button sx={{ color: '#fff' }}>
-                                    {item}
-                                </Button>
+                    {!mounted || isLoading ? (
+                        <Skeleton variant="text" width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+                    ) : (
+                        isLoggedIn && (
+                            <Link href="/admin/portal" passHref>
+                                <Button sx={{ color: '#fff' }}>Portal</Button>
                             </Link>
-                        ))}
-                        <Button sx={{ color: '#fff' }} onClick={handleAuthClick}>
-                            {isLoggedIn ? 'Logout' : 'Login'}
-                        </Button>
-                    </Box>
+                        )
+                    )}
+
+                    <LoginLogoutButton />
                 </Toolbar>
             </AppBar>
             {/*<Drawer*/}

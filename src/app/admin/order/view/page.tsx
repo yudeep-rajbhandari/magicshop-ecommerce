@@ -16,7 +16,7 @@ import Sidebar from "@/app/admin/portal/sidebar";
 import Link from "next/link";
 
 const drawerWidth = 240;
-
+export const dynamic = 'force-dynamic';
 export default async function AdminOrdersPage() {
     // Fetch all orders from MongoDB
     const orders = await prisma.order.findMany({

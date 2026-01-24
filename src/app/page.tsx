@@ -2,7 +2,7 @@ import Navbar from './admin/navbar';
 export default function HomePage() {
     return (
         <>
-        <Navbar/>
+
         <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-700 via-pink-500 to-red-400 text-white text-center p-8">
 
             <div>

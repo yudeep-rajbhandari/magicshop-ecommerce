@@ -8,6 +8,11 @@ export const authConfig = {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
             const isOnDashboard = nextUrl.pathname.startsWith('/admin');
+            const isOnAdminPath = nextUrl.pathname.startsWith('/admin');
+            if (isOnAdminPath) {
+                if (isLoggedIn) return true;
+                return false; // Redirects to the login page defined above
+            }
             if (isOnDashboard) {
                 return isLoggedIn;
                  // Redirect unauthenticated users to login page

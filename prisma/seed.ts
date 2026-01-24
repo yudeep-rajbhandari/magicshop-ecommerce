@@ -20,6 +20,20 @@ async function main() {
     console.log('Admin user created:', admin);
 }
 
+async function seedCategories() {
+    const apparelPromo = await prisma.promoRule.create({
+        data: { name: "Bulk Apparel", minQuantity: 2, discountRate: 0.10 }
+    });
+
+    await prisma.category.create({
+        data: { name: "Apparel", promoRuleId: apparelPromo.id }
+    });
+
+    await prisma.category.create({
+        data: { name: "Technology" } // No promo for this one yet
+    });
+}
+
 main()
     .catch(e => {
         console.error(e);

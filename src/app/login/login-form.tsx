@@ -8,17 +8,28 @@ import {
 } from '@heroicons/react/24/outline';
 import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import Button from '@mui/material/Button';
-import { useActionState } from 'react';
+import {useActionState, useEffect} from 'react';
 import { authenticate } from '@/app/login/actions';
 import { useSearchParams } from 'next/navigation';
-
+import { useRouter } from 'next/navigation';
 export default function LoginForm() {
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || '/admin';
-    const [errorMessage, formAction, isPending] = useActionState(
-        authenticate,
-        undefined,
-    );
+
+    const router = useRouter();
+    const [state, formAction, isPending] = useActionState(authenticate, undefined);
+
+    useEffect(() => {
+        if (state === "SUCCESS") {
+            // 1. Force the router to invalidate the layout cache
+            router.refresh();
+
+            // 2. Small delay to ensure the session provider sees the cookie
+            setTimeout(() => {
+                router.push('/admin/portal');
+            }, 100);
+        }
+    }, [state, router]);
 
     return (
         <form action={formAction} className="space-y-3">
@@ -76,10 +87,11 @@ export default function LoginForm() {
                     aria-live="polite"
                     aria-atomic="true"
                 >
-                    {errorMessage && (
+                    {/* Use 'state' here, and make sure it's an actual error, not 'SUCCESS' */}
+                    {state && state !== "SUCCESS" && (
                         <>
                             <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                            <p className="text-sm text-red-500">{errorMessage}</p>
+                            <p className="text-sm text-red-500">{state}</p>
                         </>
                     )}
                 </div>

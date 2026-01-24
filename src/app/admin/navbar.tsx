@@ -3,14 +3,13 @@
 import {AppBar, Toolbar, IconButton, Typography, Button, Box, Skeleton} from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {useEffect, useState} from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import LoginLogoutButton from "@/app/admin/SignInButton";
+import {useSession} from "next-auth/react";
 
 const Navbar = () => {
-    const { data: session,status } = useSession();
     const [mobileOpen, setMobileOpen] = useState(false);
-
+    const { data: session, status } = useSession();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -24,23 +23,23 @@ const Navbar = () => {
 
     // Important: Prevent the nav links from flashing incorrectly
     if (!mounted) return null;
-    const navItems = ['Home', 'About','Portal'];
+    // const navItems = ['Home', 'About','Portal'];
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
 
-    const handleAuthClick = async () => {
-        console.log('session', session);
-
-        if(isLoggedIn){
-            await signOut({ redirect: true });
-        }
-        else {
-            await signIn(undefined, { redirect: true });
-
-        }
-    };
+    // const handleAuthClick = async () => {
+    //     console.log('session', session);
+    //
+    //     if(isLoggedIn){
+    //         await signOut({ redirect: true });
+    //     }
+    //     else {
+    //         await signIn(undefined, { redirect: true });
+    //
+    //     }
+    // };
     //
     // const drawer = (
     //     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>

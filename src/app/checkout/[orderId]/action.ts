@@ -70,7 +70,7 @@ export async function submitPaymentProof(formData: FormData) {
 
     // Extracting fields based on YOUR schema names
     const name = formData.get("name") as string;
-    const age = formData.get("age") ? parseInt(formData.get("age") as string) : null;
+    const phone = formData.get("phone") ? parseInt(formData.get("phone") as string) : null;
     const address = formData.get("address") as string;
     const email = formData.get("email") as string;
     const file = formData.get("file") as File; // This name comes from your input field in PaymentForm
@@ -88,7 +88,7 @@ export async function submitPaymentProof(formData: FormData) {
             where: { id: orderId },
             data: {
                 clientName: name,
-                clientAge: age,
+                phone: phone,
                 clientAddress: address,
                 clientEmail: email,
                 paymentScreenshot: screenshotUrl, // Matches your schema

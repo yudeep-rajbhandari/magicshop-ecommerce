@@ -57,7 +57,7 @@ model Category {
 model Order {
   id                String      @id @default(auto()) @map("_id") @db.ObjectId
   clientName        String? // New
-  clientAge         Int? // New
+  phone             String? // New
   clientAddress     String? // New
   clientEmail       String?
   paymentScreenshot String?

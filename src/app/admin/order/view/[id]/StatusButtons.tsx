@@ -13,7 +13,7 @@ import {
 import UndoIcon from '@mui/icons-material/Undo';
 import PrintIcon from '@mui/icons-material/Print';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { updateOrderStatus } from "./action";
+import {updateOrderRemainingAmount, updateOrderStatus} from "./action";
 
 // Define the logical flow of your business
 const statusSteps = [
@@ -30,10 +30,11 @@ interface StatusButtonsProps {
     customerName: string;
     customerAddress: string;
     remainingAmountForPrint: string
+    phone: string
 }
 
 
-export default function StatusButtons({ orderId, currentStatus,customerName,customerAddress,remainingAmountForPrint }: StatusButtonsProps) {
+export default function StatusButtons({ orderId, currentStatus,customerName,customerAddress,remainingAmountForPrint,phone }: StatusButtonsProps) {
     const [isPending, startTransition] = useTransition();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [remainingAmount, setRemainingAmount] = useState<string>("");
@@ -56,7 +57,8 @@ export default function StatusButtons({ orderId, currentStatus,customerName,cust
             try {
                 await updateOrderStatus(orderId, status);
             } catch (error) {
-                alert("Failed to update status. Please try again.");
+
+                alert("Failed to update status. Please try again. Error: " + error.status || "Unknown error");
             }
         });
     };
@@ -80,7 +82,8 @@ export default function StatusButtons({ orderId, currentStatus,customerName,cust
         setIsDialogOpen(false);
         startTransition(async () => {
             try {
-                await updateOrderStatus(orderId, "PAID", amount);
+                await updateOrderRemainingAmount(orderId, amount);
+                await updateOrderStatus(orderId, "PAID");
             } catch (error) {
                 alert("Failed to update status. Please try again.");
             }
@@ -178,9 +181,12 @@ export default function StatusButtons({ orderId, currentStatus,customerName,cust
                 </head>
                 <body>
                     <div class="shipping-label">
-                        <div class="customer-name">${customerName}</div>
-                        <div class="customer-address">${customerAddress}</div>
-                         <div class="customer-address">${remainingAmountForPrint}</div>
+                    <p>Shipping Label</p>
+                        <div class="customer-name">Name: ${customerName}</div>
+                        <div class="customer-address">Address: ${customerAddress}</div>
+                         <div class="customer-address">Remaing Amount: ${remainingAmountForPrint}</div>
+                          <div class="customer-address">Phone: ${phone}</div>
+
                     </div>
                     <script>
                         // Wait for content to load then trigger print

@@ -61,7 +61,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>Customer Information</Typography>
                             <Divider sx={{ mb: 2 }} />
                             <Typography><strong>Name:</strong> {order.clientName}</Typography>
-                            <Typography><strong>Email:</strong> {order.clientEmail}</Typography>
+                            <Typography><strong>Email:</strong> {order.clientEmail}</Typography> 
+                            <Typography><strong>Phone:</strong> {order.phone}</Typography>
+                            <Typography><strong>Remaining Amount:</strong> {order.remainingAmount}</Typography>
+
                             <Typography sx={{ mt: 2 }}><strong>Shipping Address:</strong></Typography>
                             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', bgcolor: '#f5f5f5', p: 1.5, borderRadius: 1 }}>
                                 {order.clientAddress}
@@ -147,6 +150,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                            customerName={order.clientName}
                                            customerAddress={order.clientAddress}
                                            remainingAmountForPrint = {order.remainingAmount}
+                                           phone = {order.phone}
                             />
                         </Paper>
                     </Grid>

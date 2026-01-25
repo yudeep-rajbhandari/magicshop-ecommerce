@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { Button, CircularProgress, Skeleton } from '@mui/material';
+import { Button, Skeleton } from '@mui/material';
 import { useState, useEffect } from 'react';
 
 export default function LoginLogoutButton() {

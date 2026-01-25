@@ -67,6 +67,7 @@ const navItems = [
         label: 'Category',
         children: [
             { label: 'Add', href: '/category/add' },
+            { label: 'View All', href: '/category/view' }
         ],
     },
 ];

@@ -6,9 +6,10 @@ import {
     Box, TextField, Select, MenuItem, InputLabel, FormControl,
     Card, CardContent, Typography, Grid, Dialog, DialogTitle,
     DialogContent, DialogActions, CircularProgress, CardActions, Button,
-    Chip
+    Chip, DialogContentText, Divider, Alert,
+    Snackbar
 } from "@mui/material";
-import { deleteProduct, viewProducts, createOrderAction } from "./action";
+import { deleteProduct, viewProducts, createOrderAction,sendLinkByEmail } from "./action";
 import SignedImage from '../../../../component/s3-image';
 
 const drawerWidth = 240;
@@ -36,6 +37,27 @@ export default function ProductsViewPage() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [linkData, setLinkData] = useState<{open: boolean, url: string}>({open: false, url: ""});
+    const [email, setEmail] = useState("");
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' } | null>(null);
+
+    const handleSendEmail = () => {
+        if (!email || !linkData.url) return;
+
+        startTransition(async () => {
+            const result = await sendLinkByEmail(email, linkData.url);
+            setSnackbar({
+                open: true,
+                message: result.message,
+                severity: result.success ? 'success' : 'error',
+            });
+            if (result.success) {
+                // Close the dialog and reset the email field on success
+                setLinkData({ open: false, url: "" });
+                setEmail("");
+            }
+        });
+    };
+
 
     const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -181,21 +203,58 @@ export default function ProductsViewPage() {
             <Dialog open={linkData.open} onClose={() => setLinkData({open: false, url: ""})} fullWidth maxWidth="sm">
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Order Link Ready</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <DialogContentText>
                         Share this unique checkout link with your customer:
-                    </Typography>
-                    <Box sx={{ p: 2, bgcolor: '#f0f7ff', border: '1px dashed #1976d2', borderRadius: 2, wordBreak: 'break-all', mt: 2 }}>
+                    </DialogContentText>
+                    <Box sx={{ p: 2, bgcolor: '#f0f7ff', border: '1px dashed #1976d2', borderRadius: 2, wordBreak: 'break-all', mt: 2, mb: 3 }}>
                         <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{linkData.url}</Typography>
                     </Box>
+
+                    <Divider sx={{ mb: 2 }}>OR</Divider>
+
+                    <DialogContentText>
+                        Send the link directly to their email.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        name="email"
+                        label="Customer Email Address"
+                        type="email"
+                        fullWidth
+                        variant="outlined"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
                 </DialogContent>
-                <DialogActions sx={{ p: 3 }}>
-                    <Button variant="contained" onClick={() => {
-                        navigator.clipboard.writeText(linkData.url);
-                        alert("Copied to clipboard!");
-                    }}>Copy to Clipboard</Button>
+                <DialogActions sx={{ p: '0 24px 24px' }}>
                     <Button onClick={() => setLinkData({open: false, url: ""})}>Close</Button>
+                    <Button variant="outlined" onClick={() => {
+                        navigator.clipboard.writeText(linkData.url);
+                        setSnackbar({ open: true, message: 'Copied to clipboard!', severity: 'success' });
+                    }}>Copy Link</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSendEmail}
+                        disabled={isPending || !email}
+                    >
+                        {isPending ? "Sending..." : "Email Link"}
+                    </Button>
                 </DialogActions>
             </Dialog>
+            {snackbar && (
+                <Snackbar
+                    open={snackbar.open}
+                    autoHideDuration={6000}
+                    onClose={() => setSnackbar(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert onClose={() => setSnackbar(null)} severity={snackbar.severity} sx={{ width: '100%' }}>
+                        {snackbar.message}
+                    </Alert>
+                </Snackbar>
+            )}
+
 
             {/* Delete Confirmation */}
             <Dialog open={Boolean(deleteId)} onClose={() => setDeleteId(null)}>
